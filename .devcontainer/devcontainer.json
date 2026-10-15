@@ -160,11 +160,11 @@
   // Teaching note: These are installed using Dev Container Features (pre-packaged scripts)
   "features": {
     // Node.js and npm (ensure correct version)
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "22",
-      "nodeGypDependencies": true,
-      "installYarnUsingApt": false
-    },
+    //"ghcr.io/devcontainers/features/node:1": {
+    //  "version": "22",
+    //  "nodeGypDependencies": true,
+    //  "installYarnUsingApt": false
+    //},
 
     // Git (for version control inside container)
     "ghcr.io/devcontainers/features/git:1": {
@@ -176,7 +176,7 @@
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": true,
       "installOhMyZsh": true,
-      "upgradePackages": true
+      "upgradePackages": false
     }
   },
 
