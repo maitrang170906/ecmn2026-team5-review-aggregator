@@ -79,6 +79,37 @@ export const validateProductId = [
 ];
 
 /**
+ * Team 5 — review list query rules: ?source=amazon&page=1&per_page=10&sort=newest
+ */
+export const validateReviewQuery = [
+  param('id')
+    .isInt({ min: 1 }).withMessage('Product ID must be a positive integer')
+    .toInt(),
+
+  query('source')
+    .optional({ checkFalsy: true })
+    .trim()
+    .customSanitizer((v) => v.toLowerCase())
+    .isIn(['amazon', 'bestbuy', 'walmart', 'all']).withMessage('Source must be amazon, bestbuy, walmart or all'),
+
+  query('page')
+    .optional()
+    .isInt({ min: 1 }).withMessage('Page must be a positive integer')
+    .toInt(),
+
+  query('per_page')
+    .optional()
+    .isInt({ min: 1, max: 50 }).withMessage('Items per page must be 1-50')
+    .toInt(),
+
+  query('sort')
+    .optional()
+    .isIn(['newest', 'oldest', 'rating_desc', 'rating_asc']).withMessage('Sort must be newest, oldest, rating_desc or rating_asc'),
+
+  validate,
+];
+
+/**
  * Pagination validation rules
  */
 export const validatePagination = [

@@ -31,11 +31,21 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
   user: process.env.DB_USER || 'appuser',
-  password: process.env.DB_PASSWORD || 'apppassword',
+  // Team 5: '??' (not '||') so an EMPTY password works (XAMPP root has no password by default)
+  password: process.env.DB_PASSWORD ?? 'apppassword',
   database: process.env.DB_NAME || 'minimal_app_db',
   waitForConnections: true,
   connectionLimit: 10,
   connectTimeout: 10000, // 10 seconds
+  // Team 5: review dates come from the scraper in UTC ("...Z"). Reading and
+  // writing dates as UTC avoids a 7-hour shift when MySQL runs in local time
+  // (e.g. XAMPP on a laptop in Vietnam). See the SET time_zone below.
+  timezone: 'Z',
+});
+
+// Make every pooled connection work in UTC so TIMESTAMP values match `timezone: 'Z'`
+pool.pool.on('connection', (conn) => {
+  conn.query("SET time_zone = '+00:00'");
 });
 
 /**

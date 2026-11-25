@@ -94,3 +94,29 @@ INSERT INTO products (name, description, price, image_url, category_id) VALUES
 ('Notebook', 'Hardcover ruled notebook', 7.99, 'https://placehold.co/600x400?text=Notebook', NULL),
 ('Desk Plant', 'Low-maintenance succulent', 11.99, 'https://placehold.co/600x400?text=Desk+Plant', NULL),
 ('Sticker Pack', 'Assorted laptop stickers', 4.99, 'https://placehold.co/600x400?text=Sticker+Pack', NULL);
+
+-- ============================================================================
+-- TEAM 5 PROJECT — Multi-Source Product Review Aggregator
+-- ============================================================================
+-- Reviews fetched on demand from the scraper service (Amazon, BestBuy, Walmart).
+-- The same DDL lives in db/reviews.sql so it can be applied to an existing
+-- database without wiping it (see README).
+CREATE TABLE IF NOT EXISTS reviews (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  product_id INT NOT NULL,
+  source VARCHAR(32) NOT NULL,                       -- 'Amazon' | 'BestBuy' | 'Walmart'
+  review_id VARCHAR(64) NOT NULL,                    -- id given by the source (e.g. AMZ_0001)
+  author VARCHAR(100) NOT NULL,
+  rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  title VARCHAR(255),
+  body TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,   -- when the customer wrote it
+  verified_purchase BOOLEAN NOT NULL DEFAULT FALSE,
+  fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,   -- last time we retrieved it
+  UNIQUE KEY uq_review (product_id, source, review_id),     -- prevents duplicates on re-fetch
+  FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- Lookups by (product_id) and (product_id, source) already use the UNIQUE key
+-- above (leftmost prefix). This extra index serves "newest first" and the timeline.
+CREATE INDEX idx_reviews_product_created ON reviews(product_id, created_at);

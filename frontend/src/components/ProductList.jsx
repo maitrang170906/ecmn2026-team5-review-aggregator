@@ -38,7 +38,10 @@ export default function ProductList({ categories = [], backend, backendAvailable
   // The API endpoint /api/products?page=2&per_page=9&category_id=3 returns:
   //   { data: [...], meta: { total, page, per_page, total_pages } }
   // We update both products and meta so the pagination controls work correctly.
-  const fetchPage = useCallback(async (p = page, c = categoryFilter) => {
+  // Team 5 fix: page and filter are passed as arguments, so fetchPage no longer
+  // depends on them. Before, fetchPage changed on every page change, which re-ran
+  // "Effect 1" and reset the list to page 1: the Next button looked broken.
+  const fetchPage = useCallback(async (p, c) => {
     setLoading(true)
     try {
       const params = new globalThis.URLSearchParams({ page: String(p), per_page: String(perPage) })
@@ -52,17 +55,11 @@ export default function ProductList({ categories = [], backend, backendAvailable
     } finally {
       setLoading(false)
     }
-  }, [backend, page, categoryFilter, perPage])
+  }, [backend, perPage])
 
-  // Effect 1: When category filter changes, reset to page 1 and refetch
-  // Teaching note: Dependency array [categoryFilter] means this runs on mount
-  // AND whenever categoryFilter changes. We always reset to page 1 when filtering.
-  useEffect(() => { fetchPage(1, categoryFilter); setPage(1) }, [categoryFilter, fetchPage])
-
-  // Effect 2: When page changes (but not filter), refetch with current filter
-  // Teaching note: Separate effect to avoid re-running fetchPage twice when
-  // filter changes (which also changes page to 1). This demonstrates careful
-  // dependency management to prevent unnecessary API calls.
+  // Team 5 fix: one effect for both page and filter changes. Changing the
+  // category resets the page to 1 in the onChange handler (see the <select>),
+  // so there is no second effect fighting over the page number.
   useEffect(() => { fetchPage(page, categoryFilter) }, [page, categoryFilter, fetchPage])
 
   // Delete product with confirmation dialog
@@ -75,7 +72,7 @@ export default function ProductList({ categories = [], backend, backendAvailable
       const res = await fetch(`${backend}/api/products/${id}`, { method: 'DELETE' })
       if (res.status === 204) {
         // HTTP 204 = No Content (success for DELETE). Refresh the current page.
-        fetchPage()
+        fetchPage(page, categoryFilter)
       } else {
         globalThis.alert('Delete failed')
       }
@@ -105,7 +102,7 @@ export default function ProductList({ categories = [], backend, backendAvailable
           <select 
             id="category-filter" 
             value={categoryFilter} 
-            onChange={e => setCategoryFilter(e.target.value)} 
+            onChange={e => { setCategoryFilter(e.target.value); setPage(1) }} 
             className="border px-3 py-2 rounded"
             aria-describedby="filter-help"
           >

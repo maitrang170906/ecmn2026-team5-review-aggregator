@@ -207,3 +207,36 @@ GET {{scraperUrl}}/api/scrape/reviews/1?source=unknownsite
 # - These endpoints assume services run on localhost with default ports.
 # - When using Docker Compose from this repo, ports are mapped for host access.
 # - In production you may change base URLs to your deployed locations.
+
+###############################################################################
+# Team 5: Review Aggregator (backend)
+###############################################################################
+
+### Fetch reviews from the scraper and store them in MySQL (on demand)
+# Expected: 200 { data: { fetched, inserted, updated, skipped, per_source, fetched_at } }
+POST {{backendUrl}}/api/products/1/fetch
+
+### Same call within 5 s -> rate-limit protection
+# Expected: 429 { error: { message: "Reviews were just fetched...", details: { retry_after } } }
+POST {{backendUrl}}/api/products/1/fetch
+
+### Product without scraper data
+# Expected: 404 "No reviews available from the sources for this product"
+POST {{backendUrl}}/api/products/5/fetch
+
+### Stored reviews (no scraper call)
+# Expected: 200 { data: [8-field reviews], meta: { count, total, page, per_page, total_pages } }
+GET {{backendUrl}}/api/products/1/reviews
+
+### Filter by source + sort + pagination
+GET {{backendUrl}}/api/products/1/reviews?source=amazon&sort=rating_desc&page=1&per_page=3
+
+### Invalid source -> 400
+GET {{backendUrl}}/api/products/1/reviews?source=ebay
+
+### Aggregated statistics
+# Expected: 200 { data: { overall_avg, count, per_source, histogram, timeline, last_fetched_at } }
+GET {{backendUrl}}/api/products/1/aggregate
+
+### Unknown product -> 404
+GET {{backendUrl}}/api/products/99999/aggregate

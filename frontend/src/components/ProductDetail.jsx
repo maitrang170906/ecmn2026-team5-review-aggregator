@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import PropTypes from 'prop-types'
+import ReviewSection from './reviews/ReviewSection'
 
 // ---------------------------------------------------------------------------
 // ProductDetail.jsx — Single product detail view (student notes)
@@ -181,8 +182,15 @@ export default function ProductDetail({ backend, backendAvailable, onUpdate, onD
           <footer className="mt-4 text-sm text-gray-400" aria-label="Product metadata">
             Created: <time dateTime={product.created_at}>{new Date(product.created_at).toLocaleString()}</time>
           </footer>
-          {/* EXTENSION_POINT: detail.reviews | Add product reviews section | intermediate — Add reviews table and form */}
+          {/* Team 5: reviews section is rendered below, full width (see ReviewSection) */}
         </div>
+      </div>
+
+      {/* Team 5 — Multi-Source Review Aggregator: summary + Fetch button, per-source
+          breakdown, histogram/timeline and the review list. key={id} resets filters
+          and pagination when the user navigates to another product. */}
+      <div className="px-6 pb-6 border-t bg-gray-50">
+        <ReviewSection key={id} backend={backend} productId={id} />
       </div>
     </article>
   )

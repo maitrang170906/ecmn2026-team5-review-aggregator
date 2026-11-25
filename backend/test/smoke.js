@@ -97,6 +97,62 @@ async function runTests() {
     process.exit(1);
   }
 
+  // ---------------------------------------------------------------------------
+  // Team 5 — Review aggregator tests (need MySQL + scraper running)
+  // ---------------------------------------------------------------------------
+
+  // Test 6: aggregate shape (works even before any fetch)
+  try {
+    const res = await fetch(`${BASE_URL}/api/products/1/aggregate`);
+    await assert(res.ok, 'GET /api/products/1/aggregate returns 200');
+    const { data } = await res.json();
+    await assert(data && 'overall_avg' in data && 'per_source' in data, 'Aggregate has overall_avg and per_source');
+    await assert([1, 2, 3, 4, 5].every((k) => typeof data.histogram[k] === 'number'), 'Histogram has keys 1..5');
+    console.log('');
+  } catch (err) {
+    console.error(`❌ FAIL: Aggregate test error - ${err.message}`);
+    process.exit(1);
+  }
+
+  // Test 7: fetch twice -> no duplicates (UNIQUE key + upsert)
+  try {
+    const wait = (ms) => new Promise((r) => globalThis.setTimeout(r, ms));
+    const first = await fetch(`${BASE_URL}/api/products/1/fetch`, { method: 'POST' });
+    if (first.status === 429) await wait(6000); // a previous run just fetched product 1
+    const fetchRes = first.status === 429 ? await fetch(`${BASE_URL}/api/products/1/fetch`, { method: 'POST' }) : first;
+    await assert(fetchRes.ok, 'POST /api/products/1/fetch returns 200 (scraper reachable)');
+    const { data: fetched } = await fetchRes.json();
+    const before = await (await fetch(`${BASE_URL}/api/products/1/reviews?per_page=50`)).json();
+    await assert(before.meta.total === fetched.fetched, `Stored reviews (${before.meta.total}) = scraped reviews (${fetched.fetched})`);
+
+    await wait(Number(process.env.FETCH_COOLDOWN_MS ?? 5000) + 500);
+    const again = await (await fetch(`${BASE_URL}/api/products/1/fetch`, { method: 'POST' })).json();
+    await assert(again.data.inserted === 0, 'Second fetch inserts 0 new rows');
+    const after = await (await fetch(`${BASE_URL}/api/products/1/reviews?per_page=50`)).json();
+    await assert(after.meta.total === before.meta.total, 'Review count unchanged after re-fetch (no duplicates)');
+    await assert(Object.keys(after.data[0]).length === 8, 'Review objects have exactly 8 fields');
+    console.log('');
+  } catch (err) {
+    console.error(`❌ FAIL: Fetch/duplicate test error - ${err.message}`);
+    console.error('   Hint: start the scraper (npm run dev:scraper) on http://localhost:5000.');
+    process.exit(1);
+  }
+
+  // Test 8: filter by source + validation
+  try {
+    const res = await fetch(`${BASE_URL}/api/products/1/reviews?source=amazon`);
+    const body = await res.json();
+    await assert(body.data.every((r) => r.source === 'Amazon'), 'source=amazon returns only Amazon reviews');
+    const bad = await fetch(`${BASE_URL}/api/products/1/reviews?source=ebay`);
+    await assert(bad.status === 400, 'Unknown source returns 400');
+    const missing = await fetch(`${BASE_URL}/api/products/99999/reviews`);
+    await assert(missing.status === 404, 'Reviews of unknown product return 404');
+    console.log('');
+  } catch (err) {
+    console.error(`❌ FAIL: Filter test error - ${err.message}`);
+    process.exit(1);
+  }
+
   console.log('✅ All tests passed!');
   process.exit(0);
 }

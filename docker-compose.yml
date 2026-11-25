@@ -59,6 +59,9 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      # Team 5: the backend calls the scraper for POST /api/products/:id/fetch
+      scraper:
+        condition: service_started
     
     # User mapping: run as node user (UID 1000) for better security and to avoid permission issues
     # This matches the 'node' user created in the Node.js Docker image
@@ -89,6 +92,9 @@ services:
       - DB_USER=${MYSQL_USER:-appuser}                     # Match MySQL service credentials
       - DB_PASSWORD=${MYSQL_PASSWORD:-apppassword}
       - DB_NAME=${MYSQL_DATABASE:-minimal_app_db}
+      # Team 5: scraper reached through the Docker network by its service name
+      - SCRAPER_URL=${SCRAPER_URL:-http://scraper:5000}
+      - FETCH_COOLDOWN_MS=${FETCH_COOLDOWN_MS:-5000}
 
   # ============================================================================
   # Scraper Service (Mock External Review API)

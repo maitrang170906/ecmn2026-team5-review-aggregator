@@ -84,7 +84,7 @@ export default function App() {
         {/* ACCESSIBILITY: Proper landmark roles, ARIA labels, and semantic HTML */}
         <header className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold">Minimal Product Catalog</h1>
+            <h1 className="text-2xl font-bold">Product Review Aggregator <span className="text-base font-normal text-gray-500">· Team 5</span></h1>
             <div className="mt-1 text-sm text-gray-600 flex items-center gap-3">
               {/* Live backend status indicator (green/yellow/red) */}
               {/* ACCESSIBILITY: Screen reader friendly status with aria-live */}

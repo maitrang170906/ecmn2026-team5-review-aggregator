@@ -13,7 +13,9 @@
   "scripts": {
     "dev:backend": "npm --workspace=backend run dev",
     "dev:frontend": "npm --workspace=frontend run dev",
-    "dev": "concurrently --names backend,frontend --prefix \"[{name}]\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:scraper": "npm --prefix scraper-service start",
+    "setup": "npm install && npm --prefix scraper-service install",
+    "dev": "concurrently --names backend,frontend,scraper --prefix \"[{name}]\" \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:scraper\"",
     "build:frontend": "npm --workspace=frontend run build",
     "build": "npm run build:frontend",
     "prestart": "npm run build",

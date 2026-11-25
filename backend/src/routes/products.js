@@ -6,10 +6,59 @@ import {
   validateProductUpdate, 
   validateProductId,
   validatePagination,
+  validateReviewQuery,
 } from '../middleware/validators.js';
 import { queries } from '../database/queries.js';
+import {
+  listReviews,
+  aggregateReviews,
+  fetchAndStoreReviews,
+  normalizeSource,
+} from '../services/reviewService.js';
 
 const router = express.Router();
+
+// ===========================================================================
+// Team 5 — Multi-Source Review Aggregator routes
+// ===========================================================================
+// POST /api/products/:id/fetch      -> call scraper, store reviews in MySQL
+// GET  /api/products/:id/reviews    -> stored reviews (filter, sort, pagination)
+// GET  /api/products/:id/aggregate  -> overall avg, per-source avg, histogram
+// Business logic and SQL live in services/reviewService.js.
+
+/**
+ * Fetch reviews on demand (only when the user clicks "Fetch Reviews").
+ * Response: { data: { product_id, fetched, inserted, updated, skipped, per_source, fetched_at } }
+ */
+router.post('/:id/fetch', validateProductId, asyncHandler(async (req, res) => {
+  const result = await fetchAndStoreReviews(req.params.id);
+  res.json(result);
+}));
+
+/**
+ * Stored reviews — never calls the scraper.
+ * Query: ?source=amazon|bestbuy|walmart|all &page=1 &per_page=10 &sort=newest|oldest|rating_desc|rating_asc
+ * Response: { data: [review...], meta: { count, total, page, per_page, total_pages, source, sort } }
+ */
+router.get('/:id/reviews', validateReviewQuery, asyncHandler(async (req, res) => {
+  const source = req.query.source && req.query.source !== 'all' ? normalizeSource(req.query.source) : null;
+  const result = await listReviews(req.params.id, {
+    source,
+    page: req.query.page || 1,
+    perPage: req.query.per_page || 10,
+    sort: req.query.sort || 'newest',
+  });
+  res.json(result);
+}));
+
+/**
+ * Aggregated statistics computed from stored reviews.
+ * Response: { data: { overall_avg, count, per_source, histogram, timeline, last_fetched_at } }
+ */
+router.get('/:id/aggregate', validateProductId, asyncHandler(async (req, res) => {
+  const result = await aggregateReviews(req.params.id);
+  res.json(result);
+}));
 
 /**
  * List products with category name (JOIN) — supports pagination and optional category filter
