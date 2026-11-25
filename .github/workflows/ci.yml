@@ -203,10 +203,22 @@ jobs:
         env:
           MYSQL_PWD: testpassword
 
+      # Team 5: the review smoke tests call POST /api/products/:id/fetch,
+      # so the mock scraper service must be running too (port 5000).
+      - name: Install scraper service
+        run: npm ci --prefix scraper-service
+
       # Wait for backend to start, then run smoke tests
       # Teaching note: Smoke tests verify basic API functionality
       - name: Start backend and run smoke tests
         run: |
+          # Team 5: start the mock scraper in background
+          npm start --prefix scraper-service &
+          for i in {1..20}; do
+            if curl -f http://localhost:5000/health > /dev/null 2>&1; then echo "Scraper is ready!"; break; fi
+            sleep 1
+          done
+
           # Start backend in background
           npm run start --workspace=backend &
           BACKEND_PID=$!
@@ -238,6 +250,7 @@ jobs:
           DB_PASSWORD: testpassword
           DB_NAME: test_db
           PORT: 4000
+          SCRAPER_URL: http://localhost:5000
 
   # ===========================================================================
   # Job 5: Build Docker Images (Backend)
